@@ -1,17 +1,14 @@
-import whisper
-import tempfile
-import os
+from faster_whisper import WhisperModel
 from typing import List, Dict
-from pathlib import Path
 
 
 class Transcriber:
-    """Handles video transcription using OpenAI Whisper."""
+    """Handles video transcription using faster-whisper (lightweight)."""
     
     def __init__(self, model_size: str = "tiny"):
         """
         Initialize transcriber with specified model size.
-        Options: tiny, base, small, medium, large
+        Options: tiny, base, small, medium, large-v2
         """
         self.model = None
         self.model_size = model_size
@@ -19,7 +16,11 @@ class Transcriber:
     def _load_model(self):
         """Lazy load the Whisper model."""
         if self.model is None:
-            self.model = whisper.load_model(self.model_size)
+            self.model = WhisperModel(
+                self.model_size, 
+                device="cpu",
+                compute_type="int8"
+            )
     
     def transcribe(self, video_path: str) -> List[Dict]:
         """
@@ -33,7 +34,7 @@ class Transcriber:
         self._load_model()
         
         # Transcribe with word timestamps
-        result = self.model.transcribe(
+        segments, info = self.model.transcribe(
             video_path,
             word_timestamps=True,
             language="en"
@@ -42,21 +43,20 @@ class Transcriber:
         # Extract word-level timestamps
         words = []
         
-        for segment in result.get("segments", []):
-            for word_info in segment.get("words", []):
+        for segment in segments:
+            if segment.words:
+                for word_info in segment.words:
+                    words.append({
+                        "text": word_info.word.strip(),
+                        "start": round(word_info.start, 3),
+                        "end": round(word_info.end, 3)
+                    })
+            else:
+                # Fallback to segment level
                 words.append({
-                    "text": word_info["word"].strip(),
-                    "start": round(word_info["start"], 3),
-                    "end": round(word_info["end"], 3)
-                })
-        
-        # If no word-level timestamps, fall back to segment level
-        if not words:
-            for segment in result.get("segments", []):
-                words.append({
-                    "text": segment["text"].strip(),
-                    "start": round(segment["start"], 3),
-                    "end": round(segment["end"], 3)
+                    "text": segment.text.strip(),
+                    "start": round(segment.start, 3),
+                    "end": round(segment.end, 3)
                 })
         
         return words
@@ -64,15 +64,10 @@ class Transcriber:
     def transcribe_with_segments(self, video_path: str) -> Dict:
         """
         Transcribe video and return both segments and words.
-        
-        Returns dict with:
-        - segments: list of sentence-level segments
-        - words: list of word-level timestamps
-        - full_text: complete transcript
         """
         self._load_model()
         
-        result = self.model.transcribe(
+        segments_list, info = self.model.transcribe(
             video_path,
             word_timestamps=True,
             language="en"
@@ -80,23 +75,26 @@ class Transcriber:
         
         segments = []
         words = []
+        full_text = []
         
-        for segment in result.get("segments", []):
+        for segment in segments_list:
             segments.append({
-                "text": segment["text"].strip(),
-                "start": round(segment["start"], 3),
-                "end": round(segment["end"], 3)
+                "text": segment.text.strip(),
+                "start": round(segment.start, 3),
+                "end": round(segment.end, 3)
             })
+            full_text.append(segment.text.strip())
             
-            for word_info in segment.get("words", []):
-                words.append({
-                    "text": word_info["word"].strip(),
-                    "start": round(word_info["start"], 3),
-                    "end": round(word_info["end"], 3)
-                })
+            if segment.words:
+                for word_info in segment.words:
+                    words.append({
+                        "text": word_info.word.strip(),
+                        "start": round(word_info.start, 3),
+                        "end": round(word_info.end, 3)
+                    })
         
         return {
             "segments": segments,
             "words": words,
-            "full_text": result.get("text", "").strip()
+            "full_text": " ".join(full_text)
         }
