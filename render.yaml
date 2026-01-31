@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: auto-editor-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 8000
