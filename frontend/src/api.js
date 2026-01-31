@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const API_BASE = '/api'
+// Use environment variable for API URL, fallback to relative path for local dev
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
 const api = {
   async uploadVideos(files) {
@@ -12,7 +13,9 @@ const api = {
     const response = await axios.post(`${API_BASE}/upload`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      // Increase timeout for large uploads
+      timeout: 300000 // 5 minutes
     })
     
     return response.data
@@ -20,7 +23,9 @@ const api = {
   
   async analyzeVideo(projectId, silenceThreshold = 1.0) {
     const response = await axios.post(
-      `${API_BASE}/analyze/${projectId}?silence_threshold=${silenceThreshold}`
+      `${API_BASE}/analyze/${projectId}?silence_threshold=${silenceThreshold}`,
+      {},
+      { timeout: 600000 } // 10 minutes for transcription
     )
     return response.data
   },
@@ -34,7 +39,11 @@ const api = {
   },
   
   async exportVideo(projectId) {
-    const response = await axios.post(`${API_BASE}/export/${projectId}`)
+    const response = await axios.post(
+      `${API_BASE}/export/${projectId}`,
+      {},
+      { timeout: 600000 } // 10 minutes for export
+    )
     return response.data
   },
   
@@ -46,6 +55,14 @@ const api = {
   async deleteProject(projectId) {
     const response = await axios.delete(`${API_BASE}/project/${projectId}`)
     return response.data
+  },
+  
+  getDownloadUrl(downloadPath) {
+    // Handle both relative and absolute URLs
+    if (downloadPath.startsWith('http')) {
+      return downloadPath
+    }
+    return `${API_BASE}${downloadPath}`
   }
 }
 

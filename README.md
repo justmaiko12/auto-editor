@@ -29,13 +29,73 @@ A mobile-first web application for automatically removing dead space and silence
 - FFmpeg (video processing)
 - pydub (audio analysis)
 
-## Prerequisites
+---
+
+## Deployment
+
+### Option 1: Vercel (Frontend) + Railway (Backend) - Recommended
+
+#### Step 1: Deploy Backend to Railway
+
+1. Go to [Railway](https://railway.app) and sign in with GitHub
+2. Click **"New Project"** → **"Deploy from GitHub repo"**
+3. Select `auto-editor` repository
+4. Set the **Root Directory** to `backend`
+5. Railway will auto-detect the Dockerfile and deploy
+6. Once deployed, go to **Settings** → **Domains** → **Generate Domain**
+7. Copy your backend URL (e.g., `https://auto-editor-backend-production.up.railway.app`)
+
+#### Step 2: Deploy Frontend to Vercel
+
+1. Go to [Vercel](https://vercel.com) and sign in with GitHub
+2. Click **"Add New Project"** → Import `auto-editor`
+3. Set the **Root Directory** to `frontend`
+4. Add Environment Variable:
+   - Name: `VITE_API_URL`
+   - Value: Your Railway backend URL from Step 1
+5. Click **Deploy**
+
+#### Step 3: Update CORS (if needed)
+
+If you get CORS errors, the backend already allows all origins. If you want to restrict it, edit `backend/app/main.py`:
+
+```python
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://your-vercel-app.vercel.app"],
+    ...
+)
+```
+
+---
+
+### Option 2: Railway (Both Frontend & Backend)
+
+Deploy both services on Railway:
+
+1. Create two services from the same repo
+2. Service 1 (Backend): Root directory = `backend`
+3. Service 2 (Frontend): Root directory = `frontend`, add `VITE_API_URL` env var pointing to backend
+
+---
+
+### Option 3: Docker (Self-hosted)
+
+```bash
+docker-compose up --build
+```
+
+---
+
+## Local Development
+
+### Prerequisites
 
 - Node.js 18+
 - Python 3.10+
 - FFmpeg installed on your system
 
-### Installing FFmpeg
+#### Installing FFmpeg
 
 **macOS:**
 ```bash
@@ -46,11 +106,6 @@ brew install ffmpeg
 ```bash
 sudo apt update && sudo apt install ffmpeg
 ```
-
-**Windows:**
-Download from https://ffmpeg.org/download.html
-
-## Setup
 
 ### Backend
 
@@ -82,6 +137,8 @@ npm run dev
 
 The app will be available at http://localhost:3000
 
+---
+
 ## Usage
 
 1. **Upload** - Tap the upload area or drag videos onto it
@@ -91,6 +148,8 @@ The app will be available at http://localhost:3000
    - **Timeline**: Tap segments to toggle keep/remove
    - **Transcript**: Long-press and drag to select words to remove
 5. **Export** - Tap "Export Video" to download the edited result
+
+---
 
 ## API Endpoints
 
@@ -103,6 +162,8 @@ The app will be available at http://localhost:3000
 | GET | `/project/{project_id}` | Get project status |
 | GET | `/download/{project_id}` | Download exported video |
 | DELETE | `/project/{project_id}` | Delete project |
+
+---
 
 ## Configuration
 
@@ -120,6 +181,8 @@ The default Whisper model is `base`. For better accuracy (slower), edit `backend
 ```python
 def __init__(self, model_size: str = "small"):  # or "medium", "large"
 ```
+
+---
 
 ## License
 

@@ -44,8 +44,9 @@ function App() {
       // Export video
       const result = await api.exportVideo(projectId)
       
-      // Trigger download
-      window.location.href = `/api${result.download_url}`
+      // Trigger download using the proper URL
+      const downloadUrl = api.getDownloadUrl(result.download_url)
+      window.open(downloadUrl, '_blank')
       
       // Reset to upload screen after short delay
       setTimeout(() => {
