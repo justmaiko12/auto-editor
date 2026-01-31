@@ -8,7 +8,7 @@ from pathlib import Path
 class Transcriber:
     """Handles video transcription using OpenAI Whisper."""
     
-    def __init__(self, model_size: str = "base"):
+    def __init__(self, model_size: str = "tiny"):
         """
         Initialize transcriber with specified model size.
         Options: tiny, base, small, medium, large
