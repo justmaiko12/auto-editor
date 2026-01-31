@@ -1,3 +1,11 @@
-# Force Railway to use Dockerfile instead of nixpacks
+[phases.setup]
+nixPkgs = ["ffmpeg", "python311", "python311Packages.pip"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
 [phases.build]
-cmds = ["echo 'Use Dockerfile instead'"]
+cmds = ["python -c \"import whisper; whisper.load_model('base')\""]
+
+[start]
+cmd = "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"
